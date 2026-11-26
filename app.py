@@ -24,6 +24,9 @@ pages = {
         st.Page("views/axis_4_skills.py", title="4. Skills and AI", icon="🛠️"),
         st.Page("views/axis_5_work_conditions.py", title="5. Work conditions", icon="🏢"),
     ],
+    "About": [
+        st.Page("views/methodology.py", title="Methodology", icon="📖"),
+    ],
 }
 navigation = st.navigation(pages)
 
