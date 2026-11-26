@@ -1,0 +1,20 @@
+# Raw survey data (too big for GitHub, > 100 MB)
+data/*.csv
+data/*.txt
+
+# Claude Code files (not part of the project)
+CLAUDE.md
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# macOS
+.DS_Store
