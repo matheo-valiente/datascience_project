@@ -28,6 +28,16 @@ read from the disk and kept in the cache. To download the files in advance: `pyt
 
 The data is never committed to the repository.
 
+## Deploy online (Streamlit Community Cloud)
+
+1. Go to https://share.streamlit.io and sign in with the GitHub account that owns the repository.
+2. **Create app** → repository `matheo-valiente/datascience_project`, branch `main`,
+   main file `app.py`.
+3. **Advanced settings** → Python version **3.12**.
+4. **Deploy**. The first start downloads and cleans the data (about one minute).
+
+Nothing else is needed: no secret, no data file in the repository.
+
 ## Structure
 
 ```
