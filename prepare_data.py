@@ -2,20 +2,29 @@
 Data cleaning script for the Stack Overflow Developer Survey 2026.
 
 It reads the raw CSV (too big for GitHub), keeps the useful columns,
-cleans them and saves a small file: data/survey_clean.parquet.
-The Streamlit app only reads this clean file.
+cleans them and saves:
+- data/survey_clean.parquet  -> used by the Streamlit app (keeps the category order)
+- data/survey_clean.csv      -> same data, easy to open in Excel
+- data/data_dictionary.csv   -> description of every column
 
 Run it with:  python prepare_data.py
 """
+
+import html
 
 import numpy as np
 import pandas as pd
 
 RAW_PATH = "data/survey_results_public.csv"
-CLEAN_PATH = "data/survey_clean.parquet"
+SCHEMA_PATH = "data/survey_results_schema.csv"
+COUNTRIES_PATH = "data/countries.csv"
+
+CLEAN_PARQUET_PATH = "data/survey_clean.parquet"
+CLEAN_CSV_PATH = "data/survey_clean.csv"
+DICTIONARY_PATH = "data/data_dictionary.csv"
 
 # ---------------------------------------------------------------------------
-# 1. Columns we keep (about 30 out of 212)
+# 1. Columns we keep from the raw data (31 out of 212)
 # ---------------------------------------------------------------------------
 COLUMNS = [
     # Profile
@@ -34,8 +43,41 @@ COLUMNS = [
     "LLMHaveWorkedWith", "AICodeAgentHaveWorkedWith",
 ]
 
+# Order of the columns in the clean file
+FINAL_COLUMNS = [
+    "ResponseId",
+    # Where
+    "Country", "ISO3", "Continent", "IsEU",
+    # Who
+    "Age", "Gender", "Education", "Employment", "CodeMain",
+    # Job
+    "Role", "RoleGroup", "ICorPM", "OrgSize", "Industry", "WorkSetting",
+    "YearsCode", "WorkExp", "ExperienceLevel", "JobSat",
+    # Salary
+    "SalaryUSD", "SalaryEUR",
+    # Technologies
+    "LanguagesHaveWorkedWith", "LanguagesWantToWorkWith", "LanguagesAdmired",
+    "DatabasesHaveWorkedWith", "CloudPlatHaveWorkedWith",
+    "WebFrameworkHaveWorkedWith", "DevIDEHaveWorkedWith",
+    # AI
+    "AISelect", "UsesAI", "AISentiment", "AITrust", "AIAvoid",
+    "LLMHaveWorkedWith", "AICodeAgentHaveWorkedWith",
+]
+
+# Description of the columns we create (the others come from the survey schema)
+NEW_COLUMNS_DESCRIPTION = {
+    "ISO3": "ISO 3166 alpha-3 country code (for maps).",
+    "Continent": "Continent of the country.",
+    "IsEU": "True if the country is one of the 27 countries of the European Union.",
+    "RoleGroup": "Role grouped in 8 families (from Role).",
+    "ExperienceLevel": "Years of professional experience in 5 groups (from WorkExp).",
+    "SalaryUSD": "Cleaned yearly salary in USD (employed and freelancers only, outliers removed).",
+    "SalaryEUR": "SalaryUSD converted to euros (1 EUR = 1.137 USD, rate used by Stack Overflow).",
+    "UsesAI": "True if the person uses at least one AI tool at work (from AISelect).",
+}
+
 # ---------------------------------------------------------------------------
-# 2. Country names: shorter names and merge of duplicates
+# 2. Countries: shorter names and merge of duplicates
 # ---------------------------------------------------------------------------
 COUNTRY_NAMES = {
     "United States of America": "United States",
@@ -68,7 +110,46 @@ EU_COUNTRIES = [
 ]
 
 # ---------------------------------------------------------------------------
-# 3. Shorter labels for the charts (None = non-answer, becomes missing)
+# 3. Roles: 41 roles grouped in 8 families
+# ---------------------------------------------------------------------------
+ROLE_GROUPS = {
+    "Developer": [
+        "Developer, full-stack", "Developer, back-end", "Developer, front-end",
+        "Developer, desktop or enterprise applications", "Developer, mobile",
+        "Developer, embedded applications or devices", "Developer, game or graphics",
+        "Developer, QA or test", "Developer, AI apps or physical AI", "Software engineer",
+    ],
+    "Data & AI": [
+        "AI/ML engineer", "Data engineer", "Data scientist",
+        "Data or business analyst", "Applied scientist",
+    ],
+    "Infrastructure & security": [
+        "DevOps engineer or professional", "Cloud infrastructure engineer",
+        "System administrator", "Site reliability engineer", "Platform engineer",
+        "Database administrator or engineer", "Cybersecurity or InfoSec professional",
+        "Support engineer or analyst",
+    ],
+    "Architect & solutions": [
+        "Architect, software or solutions",
+        "Solutions engineer, implementation engineer, or forward-deployed engineer",
+    ],
+    "Management": [
+        "Engineering manager", "Senior executive (C-suite, VP, etc.)",
+        "Founder or entrepreneur", "Project manager", "Product manager",
+    ],
+    "Research & education": ["Academic researcher", "Educator or instructor"],
+    "Student": ["Student"],
+    "Other": [
+        "Hardware engineer", "UX, research, or UI design professional",
+        "Developer advocate or developer relations professional",
+        "Technical writer or documentation professional",
+        "Financial analyst or engineer", "Marketing/Sales professional",
+        "Retired", "Other",
+    ],
+}
+
+# ---------------------------------------------------------------------------
+# 4. Shorter labels for the charts (None = non-answer, becomes missing)
 # ---------------------------------------------------------------------------
 AGE_LABELS = {
     "Under 18 years old": "Under 18",
@@ -89,16 +170,7 @@ EDUCATION_LABELS = {
     "Bachelor's degree (B.A., B.S., B.Eng., etc.)": "Bachelor's degree",
     "Master's degree (M.A., M.S., M.Eng., MBA, etc.)": "Master's degree",
     "Professional degree (JD, MD, Ph.D, Ed.D, etc.)": "Doctorate / professional degree",
-    "Other, please specify": "Other",
-}
-
-EMPLOYMENT_LABELS = {
-    "Employed": "Employed",
-    "Independent contractor, freelancer, or self-employed": "Freelancer / self-employed",
-    "Student": "Student",
-    "Not employed": "Not employed",
-    "Retired": "Retired",
-    "I prefer not to say": None,
+    "Other, please specify": None,   # cannot be placed in the order
 }
 
 ORG_SIZE_LABELS = {
@@ -128,14 +200,6 @@ IC_OR_PM_LABELS = {
     "People manager": "People manager",
 }
 
-GENDER_LABELS = {
-    "Man": "Man",
-    "Woman": "Woman",
-    "Non-binary": "Non-binary",
-    "Prefer to self-describe:": "Self-described",
-    "Prefer not to say": None,
-}
-
 AI_SENTIMENT_LABELS = {
     "Very unfavorable": "Very unfavorable",
     "Somewhat unfavorable": "Somewhat unfavorable",
@@ -154,7 +218,59 @@ AI_TRUST_LABELS = {
     "Not sure / I do not use AI tools": None,
 }
 
-# Columns that have a natural order (the order of the dict is the order)
+EMPLOYMENT_LABELS = {
+    "Employed": "Employed",
+    "Independent contractor, freelancer, or self-employed": "Freelancer / self-employed",
+    "Student": "Student",
+    "Not employed": "Not employed",
+    "Retired": "Retired",
+    "I prefer not to say": None,
+}
+
+GENDER_LABELS = {
+    "Man": "Man",
+    "Woman": "Woman",
+    "Non-binary": "Non-binary",
+    "Prefer to self-describe:": "Self-described",
+    "Prefer not to say": None,
+}
+
+CODE_MAIN_LABELS = {
+    "I create code as a primary part of my job": "Codes as main job",
+    "I create code occasionally": "Codes occasionally",
+    "I review/maintain code but rarely create it": "Reviews or maintains code",
+    "I manage or support people who create code": "Manages people who code",
+    "I do not create code": "Does not code",
+}
+
+AI_AVOID_LABELS = {
+    "I do not avoid using AI at work or school": "Does not avoid AI",
+    "Concern over losing job skills or training an AI to replace you": "Fear of losing skills or job",
+    "Moral or ethical concerns": "Moral or ethical concerns",
+    "Issues with privacy or security": "Privacy or security",
+    "Environmental concerns": "Environmental concerns",
+    "Difficulty or lack of training": "Lack of training",
+    "Other, please specify:": "Other",
+}
+
+INDUSTRY_LABELS = {
+    "IT services, consulting, systems integration, or managed services": "IT services & consulting",
+    "Retail, e-commerce, or consumer services": "Retail & e-commerce",
+    "Banking/financial services": "Banking & finance",
+    "Engineering services or applied R&D": "Engineering & R&D",
+    "Utilities, internet, or telecommunications": "Telecom & utilities",
+    "Media or advertising services": "Media & advertising",
+    "Transportation or supply chain": "Transport & logistics",
+    "Hospitality or travel": "Hospitality & travel",
+    "Non-profit or social services": "Non-profit",
+    "Agriculture, forestry, fishing, and hunting": "Agriculture",
+    "Life sciences or biotechnology": "Life sciences & biotech",
+    "Mining or construction": "Mining & construction",
+    "Broadcasting or publishing": "Broadcasting & publishing",
+    "Other, please specify": "Other",
+}
+
+# Columns with a natural order (the order of the dict is the order)
 ORDERED_COLUMNS = {
     "Age": AGE_LABELS,
     "Education": EDUCATION_LABELS,
@@ -169,10 +285,12 @@ ORDERED_COLUMNS = {
 UNORDERED_COLUMNS = {
     "Employment": EMPLOYMENT_LABELS,
     "Gender": GENDER_LABELS,
+    "CodeMain": CODE_MAIN_LABELS,
+    "AIAvoid": AI_AVOID_LABELS,
 }
 
 # ---------------------------------------------------------------------------
-# 4. Cleaning rules (numbers)
+# 5. Cleaning rules (numbers)
 # ---------------------------------------------------------------------------
 MAX_YEARS = 50                    # more than 50 years of experience is not realistic
 SALARY_MIN_USD = 1_000            # below this, it is surely a monthly salary or a typo
@@ -183,11 +301,30 @@ EXPERIENCE_BINS = [-1, 2, 5, 10, 20, MAX_YEARS]
 EXPERIENCE_LABELS = ["0-2 years", "3-5 years", "6-10 years", "11-20 years", "20+ years"]
 
 
+# ---------------------------------------------------------------------------
+# Functions
+# ---------------------------------------------------------------------------
 def apply_labels(series, labels, ordered):
     """Replace long answers by short labels and turn the column into a category."""
-    new_series = series.map(lambda value: labels.get(value, value))
+    unknown = set(series.dropna()) - set(labels)
+    if unknown:
+        raise ValueError(f"Answers without a label in {series.name}: {unknown}")
+    new_series = series.map(labels)
     categories = [label for label in labels.values() if label is not None]
     return pd.Categorical(new_series, categories=categories, ordered=ordered)
+
+
+def group_roles(role_series):
+    """Give each role its family (for example 'Data scientist' -> 'Data & AI')."""
+    role_to_group = {}
+    for group, roles in ROLE_GROUPS.items():
+        for role in roles:
+            role_to_group[role] = group
+
+    unknown = set(role_series.dropna()) - set(role_to_group)
+    if unknown:
+        raise ValueError(f"Roles without a group: {unknown}")
+    return pd.Categorical(role_series.map(role_to_group), categories=list(ROLE_GROUPS))
 
 
 def remove_outliers_by_country(df, column):
@@ -213,6 +350,42 @@ def get_usd_per_eur(df):
     return ratio.median()
 
 
+def make_dictionary(df):
+    """Table with the description of every column of the clean data."""
+    schema = pd.read_csv(SCHEMA_PATH, encoding="utf-8-sig")
+    questions = dict(zip(schema["column"], schema["question"].map(html.unescape)))
+
+    rows = []
+    for column in df.columns:
+        if column in NEW_COLUMNS_DESCRIPTION:
+            description = NEW_COLUMNS_DESCRIPTION[column]
+            source = "Created in prepare_data.py"
+        else:
+            description = questions.get(column, "")
+            source = "Survey question"
+        rows.append({
+            "column": column,
+            "description": description,
+            "source": source,
+            "type": str(df[column].dtype),
+            "non_missing": df[column].notna().sum(),
+        })
+    return pd.DataFrame(rows)
+
+
+def check_data(df):
+    """Some checks to be sure the clean data is correct."""
+    assert df["ResponseId"].is_unique, "duplicated respondents"
+    assert df["Country"].notna().all(), "respondents without a country"
+    assert df["Continent"].notna().sum() == (df["Country"] != "Nomadic").sum(), "country without continent"
+    assert df["IsEU"].groupby(df["Country"]).first().sum() == 27, "EU should have 27 countries"
+    assert df["SalaryUSD"].dropna().between(SALARY_MIN_USD, SALARY_MAX_USD).all(), "salary out of bounds"
+    assert df["WorkExp"].dropna().le(MAX_YEARS).all(), "experience out of bounds"
+    assert df["JobSat"].dropna().between(0, 10).all(), "job satisfaction should be between 0 and 10"
+    assert list(df.columns) == FINAL_COLUMNS, "unexpected columns"
+    print("  all checks passed")
+
+
 def main():
     print("Loading raw data...")
     df = pd.read_csv(RAW_PATH, encoding="utf-8-sig", low_memory=False)
@@ -230,10 +403,11 @@ def main():
 
     # We only keep the useful columns after the duplicate check
     df = df[COLUMNS].copy()
-    print(f"  columns kept: {len(COLUMNS)} out of 212")
 
     # --- Countries ----------------------------------------------------------
     df["Country"] = df["Country"].replace(COUNTRY_NAMES)
+    countries = pd.read_csv(COUNTRIES_PATH, keep_default_na=False, na_values=[""])
+    df = df.merge(countries, on="Country", how="left")
     df["IsEU"] = df["Country"].isin(EU_COUNTRIES)
 
     # --- Categories ---------------------------------------------------------
@@ -241,12 +415,14 @@ def main():
         df[column] = apply_labels(df[column], labels, ordered=True)
     for column, labels in UNORDERED_COLUMNS.items():
         df[column] = apply_labels(df[column], labels, ordered=False)
-    df["Education"] = df["Education"].cat.remove_categories("Other")
-    df["Industry"] = df["Industry"].replace("Other, please specify", "Other")
+    df["Industry"] = df["Industry"].replace(INDUSTRY_LABELS)
+    df["RoleGroup"] = group_roles(df["Role"])
 
-    # --- Experience ---------------------------------------------------------
+    # --- Numbers ------------------------------------------------------------
+    # Whole numbers, "Int64" allows missing values
     for column in ["YearsCode", "WorkExp"]:
-        df[column] = df[column].where(df[column] <= MAX_YEARS)
+        df[column] = df[column].where(df[column] <= MAX_YEARS).astype("Int64")
+    df["JobSat"] = df["JobSat"].astype("Int64")
     df["ExperienceLevel"] = pd.cut(df["WorkExp"], bins=EXPERIENCE_BINS, labels=EXPERIENCE_LABELS)
 
     # --- Salary -------------------------------------------------------------
@@ -257,11 +433,9 @@ def main():
     is_paid = df["Employment"].isin(PAID_STATUS)
     is_possible = salary.between(SALARY_MIN_USD, SALARY_MAX_USD)
     df["SalaryUSD"] = salary.where(is_paid & is_possible)
-    df["SalaryUSD"] = remove_outliers_by_country(df, "SalaryUSD")
+    df["SalaryUSD"] = remove_outliers_by_country(df, "SalaryUSD").round()
     df["SalaryEUR"] = (df["SalaryUSD"] / usd_per_eur).round()
     print(f"  salaries kept: {df['SalaryUSD'].notna().sum():,} out of {salary.notna().sum():,}")
-
-    df = df.drop(columns=["Compensation", "Currency", "ConvertedCompYearly"])
 
     # --- AI -----------------------------------------------------------------
     # AISelect is multi-select: someone uses AI if they chose at least one tool
@@ -269,12 +443,18 @@ def main():
     uses_ai = (df["AISelect"] != "I don’t use AI tools").astype("boolean")
     df["UsesAI"] = uses_ai.where(df["AISelect"].notna())
 
-    # --- Save ---------------------------------------------------------------
-    df = df.reset_index(drop=True)
-    df.to_parquet(CLEAN_PATH, index=False)
-    print(f"Saved {CLEAN_PATH}: {len(df):,} rows, {df.shape[1]} columns")
-    print(f"  France: {(df['Country'] == 'France').sum()} respondents, "
-          f"median salary {df.loc[df['Country'] == 'France', 'SalaryEUR'].median():,.0f} EUR")
+    # --- Check and save -----------------------------------------------------
+    df = df[FINAL_COLUMNS]
+    check_data(df)
+
+    df.to_parquet(CLEAN_PARQUET_PATH, index=False)
+    df.to_csv(CLEAN_CSV_PATH, index=False, encoding="utf-8-sig")   # utf-8-sig: accents OK in Excel
+    make_dictionary(df).to_csv(DICTIONARY_PATH, index=False, encoding="utf-8-sig")
+
+    france = df[df["Country"] == "France"]
+    print(f"Saved {CLEAN_PARQUET_PATH} and {CLEAN_CSV_PATH}: {len(df):,} rows, {df.shape[1]} columns")
+    print(f"Saved {DICTIONARY_PATH}")
+    print(f"  France: {len(france)} respondents, median salary {france['SalaryEUR'].median():,.0f} EUR")
 
 
 if __name__ == "__main__":
