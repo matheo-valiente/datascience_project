@@ -33,6 +33,7 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | `ui.py` | Streamlit layer shared by the pages | `load_survey`, `load_paid` (cached), `comparison_selector`, `filters_row`, `remembered_multiselect`, `show_chart`, `show_population`, `footer` |
 | `app.py` | Menu (`st.navigation`) and common sidebar | — |
 | `views/dashboard.py` | Main dashboard and message for the sponsor | — |
+| `views/methodology.py` | Methodology page (shows `docs/DATA.md` and `docs/HARMONISATION.md`, and the size of the population) | — |
 | `views/axis_*.py` | One deeper analysis axis per member | — |
 | `views/axis_4_skills.py` | Axis 4: technologies and AI linked to salaries (6 tabs) | uses `median_by_answer`, `compare_shares`, `evolution_of_shares`, `bars_compare`, `filters_row` |
 | `data/countries.csv` | Reference table made by the group: ISO3 code and continent of each country | — |
@@ -46,7 +47,9 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | Choose the comparison group (EU, Europe, world, one country), same on all pages | `ui.py` → `comparison_selector`, `get_comparison` |
 | Main dashboard: message computed from the data, key figures, 3 charts | `views/dashboard.py` |
 | Show the population of every figure (who, year, n) | `src/population.py` → `describe_population`, `ui.py` → `show_chart`, `show_population` |
-| See the data behind every chart (table view) | `ui.py` → `show_chart` |
+| See and download (CSV) the data behind every chart, with its population | `ui.py` → `show_chart` |
+| Methodology page in the app | `views/methodology.py` |
+| Tests run at each push on GitHub | `.github/workflows/tests.yml` |
 | 2025 vs 2026 comparison on harmonised questions | `src/analysis.py` → `evolution`, `evolution_of_groups` |
 | Filters of each axis, in one row above the charts | `ui.py` → `filters_row` |
 | Clear message if the data cannot be downloaded | `ui.py` → `load_survey` |
@@ -120,3 +123,4 @@ could give old results. After a change in `src/`, restart the app (or press `C` 
 - `main`: common core (data, population, shared logic, main dashboard, notebooks, docs).
 - `axis-1` … `axis-5`: one branch per axis, one member each, merged into `main` when ready.
 - Before a merge: `python -m pytest` must pass and the app must start.
+  The tests also run on GitHub at each push (tab *Actions*).
