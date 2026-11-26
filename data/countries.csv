@@ -15,7 +15,9 @@ Bangladesh,BGD,Asia
 Barbados,BRB,North America
 Belarus,BLR,Europe
 Belgium,BEL,Europe
+Belize,BLZ,North America
 Benin,BEN,Africa
+Bhutan,BTN,Asia
 Bolivia,BOL,South America
 Bosnia and Herzegovina,BIH,Europe
 Botswana,BWA,Africa
@@ -27,6 +29,7 @@ Burundi,BDI,Africa
 Cambodia,KHM,Asia
 Cameroon,CMR,Africa
 Canada,CAN,North America
+Cape Verde,CPV,Africa
 Central African Republic,CAF,Africa
 Chad,TCD,Africa
 Chile,CHL,South America
@@ -40,6 +43,7 @@ Czech Republic,CZE,Europe
 Côte d'Ivoire,CIV,Africa
 Democratic Republic of the Congo,COD,Africa
 Denmark,DNK,Europe
+Djibouti,DJI,Africa
 Dominican Republic,DOM,North America
 Ecuador,ECU,South America
 Egypt,EGY,Africa
@@ -50,12 +54,15 @@ Ethiopia,ETH,Africa
 Fiji,FJI,Oceania
 Finland,FIN,Europe
 France,FRA,Europe
+Gabon,GAB,Africa
 Gambia,GMB,Africa
 Georgia,GEO,Asia
 Germany,DEU,Europe
 Ghana,GHA,Africa
 Greece,GRC,Europe
 Guatemala,GTM,North America
+Guinea,GIN,Africa
+Guinea-Bissau,GNB,Africa
 Guyana,GUY,South America
 Haiti,HTI,North America
 Honduras,HND,North America
@@ -81,6 +88,7 @@ Kyrgyzstan,KGZ,Asia
 Laos,LAO,Asia
 Latvia,LVA,Europe
 Lebanon,LBN,Asia
+Lesotho,LSO,Africa
 Liberia,LBR,Africa
 Libya,LBY,Africa
 Lithuania,LTU,Europe
@@ -94,6 +102,7 @@ Malta,MLT,Europe
 Mauritania,MRT,Africa
 Mauritius,MUS,Africa
 Mexico,MEX,North America
+Micronesia,FSM,Oceania
 Moldova,MDA,Europe
 Monaco,MCO,Europe
 Mongolia,MNG,Asia
@@ -106,6 +115,7 @@ Nepal,NPL,Asia
 Netherlands,NLD,Europe
 New Zealand,NZL,Oceania
 Nicaragua,NIC,North America
+Niger,NER,Africa
 Nigeria,NGA,Africa
 Nomadic,,
 North Korea,PRK,Asia
@@ -113,8 +123,10 @@ North Macedonia,MKD,Europe
 Norway,NOR,Europe
 Oman,OMN,Asia
 Pakistan,PAK,Asia
+Palau,PLW,Oceania
 Palestine,PSE,Asia
 Panama,PAN,North America
+Papua New Guinea,PNG,Oceania
 Paraguay,PRY,South America
 Peru,PER,South America
 Philippines,PHL,Asia
@@ -131,6 +143,7 @@ San Marino,SMR,Europe
 Saudi Arabia,SAU,Asia
 Senegal,SEN,Africa
 Serbia,SRB,Europe
+Sierra Leone,SLE,Africa
 Singapore,SGP,Asia
 Slovakia,SVK,Europe
 Slovenia,SVN,Europe
@@ -140,6 +153,7 @@ South Korea,KOR,Asia
 Spain,ESP,Europe
 Sri Lanka,LKA,Asia
 Sudan,SDN,Africa
+Suriname,SUR,South America
 Sweden,SWE,Europe
 Switzerland,CHE,Europe
 Syria,SYR,Asia
