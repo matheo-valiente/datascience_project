@@ -29,8 +29,8 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | `src/cleaning.py` | Cleaning and harmonisation of one year | `clean_survey`, `clean_salary`, `remove_outliers_by_country`, `check_clean_data` |
 | `src/population.py` | The population behind every figure | `paid_population`, `focus_country`, `comparison_group`, `describe_population` |
 | `src/analysis.py` | Statistics: small tables, no display | `salary_summary`, `median_by_group`, `compare_groups`, `evolution`, `count_multiselect`, `median_by_answer` |
-| `src/charts.py` | Plotly figures with the common style | `bar_ranking`, `lines_compare`, `dumbbell_years`, `choropleth` |
-| `ui.py` | Streamlit layer shared by the pages | `load_survey`, `load_paid` (cached), `comparison_selector`, `show_chart`, `show_population`, `footer` |
+| `src/charts.py` | Plotly figures with the common style | `bar_ranking`, `bars_compare`, `lines_compare`, `dumbbell_years`, `choropleth` |
+| `ui.py` | Streamlit layer shared by the pages | `load_survey`, `load_paid` (cached), `comparison_selector`, `filters_row`, `remembered_multiselect`, `show_chart`, `show_population`, `footer` |
 | `app.py` | Menu (`st.navigation`) and common sidebar | — |
 | `views/dashboard.py` | Main dashboard and message for the sponsor | — |
 | `views/axis_*.py` | One deeper analysis axis per member | — |
@@ -47,6 +47,8 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | Show the population of every figure (who, year, n) | `src/population.py` → `describe_population`, `ui.py` → `show_chart`, `show_population` |
 | See the data behind every chart (table view) | `ui.py` → `show_chart` |
 | 2025 vs 2026 comparison on harmonised questions | `src/analysis.py` → `evolution`, `evolution_of_groups` |
+| Filters of each axis, in one row above the charts | `ui.py` → `filters_row` |
+| Clear message if the data cannot be downloaded | `ui.py` → `load_survey` |
 | Five axes of deeper analysis | `views/axis_1_geography.py` … `views/axis_5_work_conditions.py` |
 
 ## 4. Data flow
@@ -84,7 +86,7 @@ flowchart LR
 | Clean table of each year | `@st.cache_data` on `ui.load_survey(year)` | Cleaning takes a few seconds: it is done once, then shared by all pages and all users |
 | Paid population of each year | `@st.cache_data` on `ui.load_paid(year)` | Used by every page |
 | Comparison group chosen by the user | `st.session_state["comparison"]` (key of the sidebar selectbox) | Kept when the user changes page |
-| Filters of an axis | `st.session_state`, with a key starting with the name of the axis (for example `geography_continent`) | Each axis keeps its own filters |
+| Filters of an axis | `ui.filters_row(df, prefix, columns)`: widget key `<prefix>_<column>`, value also saved in `st.session_state["saved_<prefix>_<column>"]` | Each axis has its own filters, kept when the user changes page (Streamlit forgets the value of a widget that is not on the screen) |
 
 We do not use `persist="disk"` for the cache: if the cleaning code changes, a disk cache
 could give old results. After a change in `src/`, restart the app (or press `C` then *Clear cache*).
