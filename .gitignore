@@ -1,5 +1,7 @@
-# Raw survey data (too big for GitHub, > 100 MB)
-data/*.csv
+# Raw survey data (too big for GitHub: 117 MB)
+# Download it from https://survey.stackoverflow.co/ (see README)
+data/survey_results_public.csv
+data/survey_results_schema.csv
 data/*.txt
 
 # Claude Code files (not part of the project)
