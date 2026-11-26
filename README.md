@@ -1,71 +1,85 @@
-# Stack Overflow Developer Survey 2026 - Streamlit app
+# Developer salaries in France - Stack Overflow Survey 2026
 
-Final project for the ECE Data Visualisation course.
-An analytics app built with Streamlit on the Stack Overflow Developer Survey 2026,
-for a sponsor interested in the French market.
+Final project of the ECE Data Visualisation course: a Streamlit analytics app built on the
+Stack Overflow Developer Survey 2026 (and 2025 for some comparisons).
 
-## Run the app
+- **Theme:** salaries
+- **Sponsor:** the Apec (French association for the employment of executives)
+- **Message of the main dashboard:** developers in France earn less than in the rest of the EU,
+  at every experience level, and the gap did not close between 2025 and 2026.
+  The message is computed from the data by the app.
+
+## Run the app (from a fresh clone)
+
+Python 3.12 is recommended.
 
 ```bash
+git clone https://github.com/matheo-valiente/datascience_project.git
+cd datascience_project
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Data files
+The first launch downloads the survey files (about 250 MB, from the official Stack Overflow
+archive) into `data/raw/`, then cleans them: it takes about one minute. After that, the data is
+read from the disk and kept in the cache. To download the files in advance: `python -m src.data`.
 
-All the clean files are on GitHub, nothing to download to run the app.
+The data is never committed to the repository.
 
-| File | Content |
-|---|---|
-| `data/survey_clean.parquet` | Clean data used by the app (1.3 MB, keeps the order of the categories) |
-| `data/survey_clean.csv` | Same data in CSV, easy to open in Excel (11 MB) |
-| `data/data_dictionary.csv` | Description of the 36 columns |
-| `data/countries.csv` | Country reference table: ISO3 code and continent |
+## Structure
 
-The raw data comes from https://survey.stackoverflow.co/ (30,903 respondents, 212 columns).
-The raw CSV is not on GitHub because it is too big (117 MB).
-To rebuild the clean files, put `survey_results_public.csv` and `survey_results_schema.csv`
-in `data/` and run:
-
-```bash
-python prepare_data.py
+```
+app.py              entry point: menu and common sidebar
+views/              one file per page (main dashboard + 5 axes)
+ui.py               Streamlit helpers shared by the pages (cache, captions, sidebar)
+src/                shared logic, without Streamlit
+    config.py       settings and rules
+    data.py         download and read the raw files
+    labels.py       labels and 2025 -> 2026 harmonisation
+    cleaning.py     cleaning of one year
+    population.py   who is behind each figure
+    analysis.py     statistics (small tables)
+    charts.py       Plotly figures
+data/countries.csv  country reference table (ISO3, continent)
+notebooks/          shared explorations
+tests/              automatic tests
+docs/               architecture, data cleaning, harmonisation
 ```
 
-## Data cleaning
+## Documentation
 
-All the rules are in `prepare_data.py`. The raw file is never modified.
-The script also runs some checks at the end (`check_data`) and stops if something is wrong.
+- [Technical architecture](docs/ARCHITECTURE.md): features, files, data flow, cache and session
+- [Data and cleaning](docs/DATA.md): source, cleaning rules, columns, limits
+- [Harmonisation 2025 / 2026](docs/HARMONISATION.md): what is compared and how
 
-| Step | Rule | Why |
-|---|---|---|
-| Rows | Remove the 9,533 respondents without a country | They stopped the survey early (about 13 answers out of 212, no salary) |
-| Rows | Remove exact duplicates (same answers to all questions) | 1 row |
-| Columns | Keep 31 columns out of 212 | The others are almost empty or out of our scope |
-| Countries | Shorter names, merge duplicates (e.g. "Republic of Korea" and "South Korea") | Readable charts, correct counts |
-| Countries | New columns `ISO3`, `Continent` and `IsEU` (27 countries of the EU) | Maps, comparisons France / EU / continents |
-| Roles | New column `RoleGroup`: 41 roles grouped in 8 families | 41 bars are not readable on a chart |
-| Categories | Shorter labels and a logical order (age, company size, ...) | Readable and well sorted charts |
-| Categories | "Prefer not to say", "I don't know", "Not sure" become missing | They are not real answers |
-| Experience | `YearsCode` and `WorkExp` above 50 years become missing | Not realistic |
-| Experience | New column `ExperienceLevel` (0-2, 3-5, 6-10, 11-20, 20+ years) | Compare groups |
-| Salary | Only employed people and freelancers | Students and retired people have no salary |
-| Salary | Keep salaries between 1,000 and 1,000,000 USD per year | Remove typos (monthly salary, 99999999, ...) |
-| Salary | Boxplot rule (1.5 x IQR) on the log of the salary, **country by country** | A normal salary in India is not the same as in the US |
-| Salary | New columns `SalaryUSD` and `SalaryEUR` (1 EUR = 1.137 USD, the rate used by Stack Overflow) | Euros for the French sponsor |
-| AI | New column `UsesAI` (from the multi-select `AISelect`) | Simple yes / no |
+## The five axes
 
-Result: 21,369 respondents, 36 columns, 11,542 salaries kept out of 13,507.
+| Axis | Question | Branch | Owner |
+|---|---|---|---|
+| 1. Geography | Where does France stand compared with other countries and continents? | `axis-1` | _to complete_ |
+| 2. Experience | How do salaries grow with experience, and is the gap the same at every stage? | `axis-2` | _to complete_ |
+| 3. Roles | Which jobs pay best in France, compared with the rest of Europe? | `axis-3` | _to complete_ |
+| 4. Skills and AI | Which technologies and AI practices are linked to higher salaries? | `axis-4` | _to complete_ |
+| 5. Work conditions | Do company size, sector, remote work and freelancing change the pay? | `axis-5` | _to complete_ |
 
-Notes:
-- Continents follow the UN regions, except Cyprus which is in Europe (it is in the EU).
-  Central America and the Caribbean are in North America.
-- "Nomadic" is an answer of the survey but not a country: it has no ISO3 code and no continent.
+## Work as a group
 
-## Good practices for the charts
+- The common core is on `main`. Each axis is developed on its own branch, then merged into `main`.
+- Start an axis: `git checkout main && git pull && git checkout -b axis-1`
+- Put the logic in `src/` (no Streamlit there), the display in `views/axis_*.py`.
+- Every figure shows its population: use `ui.show_chart` or `ui.show_population`.
+- Before merging: run the tests and start the app.
 
-- Multi-select columns (languages, databases, AI tools, ...) keep the answers separated by `;`.
-  Use `count_multiselect()` in `utils.py` to count them.
-- Use the **median** for salaries, not the mean.
-- Only compare groups with **at least 30 respondents** (44 countries have 30 salaries or more).
-- Always show the number of respondents (n): some questions have few answers.
-- This is a voluntary survey of Stack Overflow users, not a representative sample of all developers.
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+## Rigour
+
+- Every figure states its population: who, which year, how many respondents.
+- Comparisons between 2025 and 2026 only use harmonised questions ([docs/HARMONISATION.md](docs/HARMONISATION.md)).
+- The respondents are volunteers who answered an online survey: the figures describe them,
+  not all developers.
