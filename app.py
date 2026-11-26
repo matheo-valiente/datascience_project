@@ -3,34 +3,23 @@ Stack Overflow Developer Survey 2026 - Streamlit app
 Data Visualisation final project (ECE)
 """
 
-import pandas as pd
 import streamlit as st
 
-DATA_PATH = "data/survey_results_public.csv"
-SCHEMA_PATH = "data/survey_results_schema.csv"
-
-
-@st.cache_data
-def load_data(path):
-    # The files start with a BOM, so we read them with "utf-8-sig"
-    return pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
-
+from utils import load_data
 
 st.set_page_config(page_title="SO Survey 2026", layout="wide")
 st.title("Stack Overflow Developer Survey 2026")
-st.write("First look at the raw data.")
+st.write("Clean data used by the app (see prepare_data.py).")
 
-df = load_data(DATA_PATH)
-schema = load_data(SCHEMA_PATH)
+df = load_data()
+france = df[df["Country"] == "France"]
 
 # Some key numbers
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Respondents", f"{len(df):,}")
-col2.metric("Columns", df.shape[1])
-col3.metric("Countries", df["Country"].nunique() if "Country" in df.columns else "?")
+col2.metric("Countries", df["Country"].nunique())
+col3.metric("Respondents in France", f"{len(france):,}")
+col4.metric("Median salary in France", f"{france['SalaryEUR'].median():,.0f} €")
 
-st.subheader("Preview of the data")
+st.subheader("Preview of the clean data")
 st.dataframe(df.head(20))
-
-st.subheader("Columns description")
-st.dataframe(schema[["column", "question", "type", "nonmissing"]])
