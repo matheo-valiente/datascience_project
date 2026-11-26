@@ -121,6 +121,66 @@ def count_multiselect(series):
     return table
 
 
+def count_single_choice(series):
+    """
+    Same table as count_multiselect, for a question with only one answer per person.
+    The order of the categories is kept (for example from "Very unfavorable" to "Very favorable").
+    """
+    answered = series.dropna()
+    counts = answered.value_counts(sort=False)
+    if not isinstance(series.dtype, pd.CategoricalDtype):
+        counts = counts.sort_values(ascending=False)
+    table = counts.rename_axis("answer").reset_index(name="count")
+    table["answer"] = table["answer"].astype(str)
+    table["percent"] = table["count"] / len(answered) * 100
+    return table
+
+
+def compare_shares(groups, column, multiselect=True, min_n=MIN_RESPONDENTS):
+    """
+    Share of each answer of a question, for several populations.
+    groups is a dict {label: DataFrame}.
+    n is the number of people of the group who answered the question:
+    the shares are reliable if n >= min_n.
+    """
+    count = count_multiselect if multiselect else count_single_choice
+    tables = []
+    for label, df in groups.items():
+        table = count(df[column])
+        table.insert(0, "group", label)
+        table["n"] = df[column].notna().sum()
+        table["reliable"] = table["n"] >= min_n
+        tables.append(table)
+    return pd.concat(tables, ignore_index=True)
+
+
+def common_answers(series_old, series_new):
+    """Answers of a multi-select question that exist in both years (harmonisation)."""
+    old = set(series_old.dropna().str.split(";").explode())
+    new = set(series_new.dropna().str.split(";").explode())
+    return sorted(old & new)
+
+
+def evolution_of_shares(series_old, series_new, old_year, new_year, answers=None):
+    """
+    Share of each answer of a multi-select question in two years, and the change
+    in percentage points. answers: list of answers to keep (by default the common ones).
+    """
+    if answers is None:
+        answers = common_answers(series_old, series_new)
+    old = count_multiselect(series_old).set_index("answer")
+    new = count_multiselect(series_new).set_index("answer")
+    table = pd.DataFrame({
+        "answer": answers,
+        f"n_{old_year}": series_old.notna().sum(),
+        f"percent_{old_year}": old["percent"].reindex(answers).fillna(0).values,
+        f"n_{new_year}": series_new.notna().sum(),
+        f"percent_{new_year}": new["percent"].reindex(answers).fillna(0).values,
+    })
+    table["change_points"] = table[f"percent_{new_year}"] - table[f"percent_{old_year}"]
+    return table
+
+
 def median_by_answer(df, column, value="SalaryEUR", min_n=MIN_RESPONDENTS):
     """
     Median salary of the people who chose each answer of a multi-select column.
