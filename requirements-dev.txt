@@ -1,0 +1,5 @@
+# Packages to develop the project: the app, plus tests and notebooks
+-r requirements.txt
+pytest==9.2.0
+ipykernel==7.1.0
+nbconvert==7.17.2
