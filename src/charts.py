@@ -100,7 +100,11 @@ def bars_compare(table, category, value, group_colors, value_label, unit="€", 
         order = list(first_group.sort_values(value, ascending=False)[category].astype(str))
 
     fig = go.Figure()
-    for group, data in table.groupby("group", sort=False):
+    # Plotly draws the first trace at the bottom of each pair of bars: we add the
+    # groups in reverse order, and reverse the legend, so the first group (France)
+    # is on top in the chart and first in the legend
+    groups = list(table.groupby("group", sort=False))
+    for group, data in reversed(groups):
         reliable = data["reliable"] if "reliable" in data else [True] * len(data)
         fig.add_trace(go.Bar(
             x=data[value],
@@ -114,7 +118,7 @@ def bars_compare(table, category, value, group_colors, value_label, unit="€", 
                            "<br>n = %{customdata[0]:,}<extra></extra>"),
         ))
     unit_text = "€ per year" if unit == "€" else "% of respondents"
-    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.05)
+    fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.05, legend_traceorder="reversed")
     fig.update_xaxes(title=f"{value_label} ({unit_text})", rangemode="tozero")
     # Plotly draws the first category at the bottom: reverse to have it on top
     fig.update_yaxes(title=None, categoryorder="array", categoryarray=list(reversed(order)))
@@ -171,19 +175,20 @@ def dumbbell_years(table, group_column, old_year, new_year, value_label="Median 
             showlegend=False, hoverinfo="skip",
         ))
     for year in [old_year, new_year]:
-        is_new = year == new_year
         fig.add_trace(go.Scatter(
-            x=table[f"{prefix}_{year}"], y=groups, name=str(year),
-            # The new year also shows the change, so it is readable even when
-            # the two dots are at the same place
-            mode="markers+text" if is_new else "markers",
-            text=[f"  {change:+.1f}{change_unit}" for change in table[change_column]] if is_new else None,
-            textposition="middle right",
+            x=table[f"{prefix}_{year}"], y=groups, name=str(year), mode="markers",
             marker=dict(size=12, color=COLOR_YEAR[year], line=dict(width=2, color="white")),
             customdata=table[[f"n_{year}"]],
             hovertemplate=(f"<b>%{{y}}</b> · {year}<br>{value_label}: {number}"
                            "<br>n = %{customdata[0]:,}<extra></extra>"),
         ))
+    # The change is written on the right of the two dots, so it is readable even
+    # when the two dots are at the same place
+    fig.add_trace(go.Scatter(
+        x=table[[old_column, new_column]].max(axis=1), y=groups, mode="text",
+        text=[f"   {change:+.1f}{change_unit}" for change in table[change_column]],
+        textposition="middle right", showlegend=False, hoverinfo="skip",
+    ))
     # Some space on the right for the labels of the change
     low = table[[old_column, new_column]].min().min()
     high = table[[old_column, new_column]].max().max()

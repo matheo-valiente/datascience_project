@@ -291,5 +291,20 @@ UNORDERED_LABELS_2026 = {
 
 PAID_STATUS = ["Employed", "Freelancer / self-employed"]
 
+# Families of technologies (multi-select questions of 2026) -> column
+TECH_FAMILIES = {
+    "Languages": "LanguagesHaveWorkedWith",
+    "Databases": "DatabasesHaveWorkedWith",
+    "Cloud and infrastructure": "CloudPlatHaveWorkedWith",
+    "Web frameworks": "WebFrameworkHaveWorkedWith",
+    "Code editors": "DevIDEHaveWorkedWith",
+}
+
+# AI tools (multi-select questions of 2026) -> column
+AI_TOOL_FAMILIES = {
+    "AI models (LLM vendors)": "LLMHaveWorkedWith",
+    "Coding agents and assistants": "AICodeAgentHaveWorkedWith",
+}
+
 EXPERIENCE_BINS = [-1, 2, 5, 10, 20, 50]
 EXPERIENCE_LABELS = ["0-2 years", "3-5 years", "6-10 years", "11-20 years", "20+ years"]

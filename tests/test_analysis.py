@@ -67,3 +67,33 @@ def test_median_by_answer_counts_one_person_in_several_answers():
     table = analysis.median_by_answer(df, "LanguagesHaveWorkedWith", min_n=1).set_index("answer")
     assert table.loc["Python", "median"] == 150
     assert table.loc["SQL", "median"] == 200
+
+
+def test_count_single_choice_keeps_the_order_of_categories():
+    order = ["Low", "Medium", "High"]
+    series = pd.Series(pd.Categorical(["High", "Low", "High", None], categories=order, ordered=True))
+    table = analysis.count_single_choice(series)
+    assert list(table["answer"]) == order
+    assert table.set_index("answer").loc["High", "percent"] == 2 / 3 * 100
+
+
+def test_compare_shares_gives_n_of_each_group():
+    groups = {
+        "A": pd.DataFrame({"Tools": ["X;Y", "X", None]}),
+        "B": pd.DataFrame({"Tools": ["Y"] * 40}),
+    }
+    table = analysis.compare_shares(groups, "Tools")
+    a = table[table["group"] == "A"].set_index("answer")
+    assert a.loc["X", "percent"] == 100
+    assert a.loc["X", "n"] == 2 and not a.loc["X", "reliable"]
+    assert table[table["group"] == "B"]["reliable"].all()
+
+
+def test_evolution_of_shares_uses_only_common_answers():
+    old = pd.Series(["Python;Java", "Python"])
+    new = pd.Series(["Python;Rust", "Java", "Python", "Python"])
+    table = analysis.evolution_of_shares(old, new, 2025, 2026).set_index("answer")
+    assert list(table.index) == ["Java", "Python"]          # Rust is only in 2026
+    assert table.loc["Python", "percent_2025"] == 100
+    assert table.loc["Python", "percent_2026"] == 75
+    assert table.loc["Python", "change_points"] == -25

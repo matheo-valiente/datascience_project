@@ -86,6 +86,14 @@ def remembered_multiselect(label, options, key, container=st, help=None):
     )
 
 
+def remembered_radio(label, options, key, container=st):
+    """One choice among a few options (horizontal), kept when the page changes."""
+    saved = st.session_state.get(f"saved_{key}", options[0])
+    index = options.index(saved) if saved in options else 0
+    return container.radio(label, options, index=index, key=key, horizontal=True,
+                           on_change=_remember, args=(key,))
+
+
 def filters_row(df, prefix, columns):
     """
     One row of filters above the charts of an axis.
