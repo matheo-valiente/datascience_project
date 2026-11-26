@@ -1,0 +1,7 @@
+[theme]
+# Same blue as France in the charts
+primaryColor = "#2a78d6"
+
+[client]
+# The menu is built in app.py with st.navigation
+showSidebarNavigation = true
