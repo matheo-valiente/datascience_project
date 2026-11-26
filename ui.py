@@ -129,11 +129,12 @@ def show_population(df, who, year, filters=None):
     st.caption(f"👥 {text}")
 
 
-def show_chart(fig, table, population_text, note=None, key=None):
+def show_chart(fig, table, population_text, key, note=None):
     """
     A chart, its population, an optional note, and the data behind it
     (table view: useful to read the exact values and for accessibility).
-    key: give a unique name if the same kind of chart is shown twice on a page.
+    key: a unique name for the chart on the page (for example "eu_ranking"),
+    needed by Streamlit to tell the charts and the download buttons apart.
     """
     st.plotly_chart(fig, width="stretch", config={"displaylogo": False}, key=key)
     st.caption(f"👥 {population_text}")
@@ -141,6 +142,11 @@ def show_chart(fig, table, population_text, note=None, key=None):
         st.caption(note)
     with st.expander("See the data of this chart"):
         st.dataframe(format_table(table), hide_index=True, width="stretch")
+        # The population is written on the first line of the file, so the numbers
+        # are never separated from who they describe
+        csv = f"# {population_text}\n" + format_table(table).to_csv(index=False)
+        st.download_button("Download the data (CSV)", csv, file_name=f"{key}_data.csv",
+                           mime="text/csv", key=f"download_{key}")
 
 
 def format_table(table):

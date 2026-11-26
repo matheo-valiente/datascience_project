@@ -115,6 +115,7 @@ with left:
                              reference_label=f"Rest of the EU: {charts.format_euros(rest_of_eu)}")
     show_chart(fig, ranking,
                f"{WHO} in the EU · {CURRENT_YEAR} · n = {ranking['n'].sum():,} respondents",
+               key="eu_ranking",
                note=f"Only the {len(ranking)} EU countries with at least {MIN_RESPONDENTS} salaries are shown.")
 
 # ---------------------------------------------------------------------------
@@ -128,6 +129,7 @@ with right:
     show_chart(fig, by_experience,
                f"{WHO} · {CURRENT_YEAR} · n = {france['n']:,} in {FOCUS_COUNTRY}, "
                f"{others['n']:,} in {other_text}",
+               key="experience_gap",
                note=(f"Empty markers: fewer than {MIN_RESPONDENTS} respondents, to read with care "
                      "(they are not used in the message above)."))
 
@@ -149,6 +151,7 @@ show_chart(fig, evolution,
            f"{WHO} · {PREVIOUS_YEAR} and {CURRENT_YEAR} · "
            f"n = {france_before['n']:,} → {france['n']:,} in {FOCUS_COUNTRY}, "
            f"{others_before['n']:,} → {others['n']:,} in {other_text}",
+           key="evolution",
            note=("Harmonised comparison: same question, same cleaning rules, each year converted to "
                  "euros with its own rate (see docs/HARMONISATION.md). Salaries are not corrected for "
                  "inflation, and the respondents are not the same people each year."))
