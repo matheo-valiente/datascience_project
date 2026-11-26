@@ -34,6 +34,7 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | `app.py` | Menu (`st.navigation`) and common sidebar | — |
 | `views/dashboard.py` | Main dashboard and message for the sponsor | — |
 | `views/axis_*.py` | One deeper analysis axis per member | — |
+| `views/axis_4_skills.py` | Axis 4: technologies and AI linked to salaries (6 tabs) | uses `median_by_answer`, `compare_shares`, `evolution_of_shares`, `bars_compare`, `filters_row` |
 | `data/countries.csv` | Reference table made by the group: ISO3 code and continent of each country | — |
 
 ## 3. Features
@@ -51,7 +52,21 @@ gives the result to a function of `src/charts.py`, and displays it with `ui.show
 | Clear message if the data cannot be downloaded | `ui.py` → `load_survey` |
 | Five axes of deeper analysis | `views/axis_1_geography.py` … `views/axis_5_work_conditions.py` |
 
-## 4. Data flow
+## 4. Axis 4 - Skills and AI (example of an axis)
+
+| View (tab) | Population | Logic (`src/analysis.py`) | Chart (`src/charts.py`) |
+|---|---|---|---|
+| Technologies and salary | Salaries in France, people who answered the question on the chosen family | `median_by_answer` | `bar_ranking` (blue = above the median) |
+| Most used | All respondents, France vs comparison group | `compare_shares` | `bars_compare` (%) |
+| AI and salary | Salaries, France vs comparison; then France at equal experience | `compare_groups` | `bars_compare`, `lines_compare` |
+| Opinions on AI | All respondents who answered (one answer each) | `compare_shares(multiselect=False)` | `bars_compare` (%) |
+| AI tools | All respondents who answered | `compare_shares` | `bars_compare` (%) |
+| Trends and wishes | France 2025 and 2026 (common languages only); used vs wanted languages | `evolution_of_shares`, `count_multiselect` | `dumbbell_years` (%), `bars_compare` |
+
+Filters of the axis (experience, role family) and the choice of each tab are kept in
+`st.session_state` (`filters_row`, `remembered_radio`). Exploration: `notebooks/axis_4_skills_and_ai.ipynb`.
+
+## 5. Data flow
 
 ```mermaid
 flowchart LR
@@ -78,7 +93,7 @@ flowchart LR
 6. **Chart** (`src/charts.py`) and **display** (`ui.show_chart`): the figure, its population
    and its data.
 
-## 5. Cache and session
+## 6. Cache and session
 
 | What | How | Why |
 |---|---|---|
@@ -91,7 +106,7 @@ flowchart LR
 We do not use `persist="disk"` for the cache: if the cleaning code changes, a disk cache
 could give old results. After a change in `src/`, restart the app (or press `C` then *Clear cache*).
 
-## 6. Rules for the charts
+## 7. Rules for the charts
 
 - France is always blue (`#2a78d6`), the comparison group always orange (`#eb6834`),
   the context grey. Colors come from a palette checked for color blindness.
@@ -100,7 +115,7 @@ could give old results. After a change in `src/`, restart the app (or press `C` 
 - Median, not mean, for salaries. One axis per chart. Bars start at 0.
 - Every chart has a "See the data" table.
 
-## 7. Git workflow
+## 8. Git workflow
 
 - `main`: common core (data, population, shared logic, main dashboard, notebooks, docs).
 - `axis-1` … `axis-5`: one branch per axis, one member each, merged into `main` when ready.

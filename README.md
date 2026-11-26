@@ -61,7 +61,7 @@ docs/               architecture, data cleaning, harmonisation
 | 1. Geography | Where does France stand compared with other countries and continents? | `axis-1` | _to complete_ |
 | 2. Experience | How do salaries grow with experience, and is the gap the same at every stage? | `axis-2` | _to complete_ |
 | 3. Roles | Which jobs pay best in France, compared with the rest of Europe? | `axis-3` | _to complete_ |
-| 4. Skills and AI | Which technologies and AI practices are linked to higher salaries? | `axis-4` | _to complete_ |
+| 4. Skills and AI | Which technologies and AI practices are linked to higher salaries? | `axis-4` | matheo-valiente |
 | 5. Work conditions | Do company size, sector, remote work and freelancing change the pay? | `axis-5` | _to complete_ |
 
 ## Work as a group
